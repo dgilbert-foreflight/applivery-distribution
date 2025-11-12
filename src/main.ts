@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import styles from 'ansi-styles'
 import * as fs from 'fs'
+import * as QRCode from 'qrcode'
 import * as Applivery from './client/applivery.js'
 import {
   BuildPlatform,
@@ -21,10 +22,6 @@ export async function run(): Promise<void> {
   // Ensure the API key is not accidentally revealed in logs
   core.setSecret(apiKey)
   const publicationPassword = core.getInput('publication-password') || null
-  // Ensure the publication password is not accidentally revealed in logs
-  if (publicationPassword) {
-    core.setSecret(publicationPassword)
-  }
 
   const branchName =
     core.getInput('branch-name') ||
@@ -177,6 +174,29 @@ export async function run(): Promise<void> {
     core.setOutput('publication-id', publication.id)
     core.setOutput('publication-slug', publication.slug)
     core.setOutput('publication-distribution-url', publication.distributionUrl)
+
+    const qrCode = await QRCode.toString(publication.distributionUrl)
+    core.setOutput('qr-code', qrCode)
+    core.summary.addHeading('Install Page', '2')
+    core.summary.addRaw(
+      ':iphone: Scan this code to install the app on your device.'
+    )
+    core.summary.addBreak()
+    core.summary.addRaw('\n```\n' + qrCode + '\n```\n')
+    if (publicationPassword) {
+      core.summary.addBreak()
+      core.summary.addRaw(
+        `:unlock: Installation Password: ${publicationPassword}`
+      )
+    }
+    core.summary.addBreak()
+    core.summary.addLink('Install Page', publication.distributionUrl)
+    core.summary.addBreak()
+    core.summary.addSeparator()
+    core.summary.write()
+    if (core.isDebug()) {
+      console.log(core.summary.stringify())
+    }
 
     // Upload the build to Applivery
     let uploadedBuild = await Applivery.uploadBuild(

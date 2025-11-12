@@ -67,6 +67,9 @@ outputs:
     description: 'Slug of the publication'
   publication-distribution-url:
     description: 'Distribution URL of the publication'
+  qr-code:
+    description:
+      'QR Code for the publication distribution URL (Text based image)'
 
 runs:
   using: node24
