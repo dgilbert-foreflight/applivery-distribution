@@ -25,7 +25,7 @@ export async function run(): Promise<void> {
 
   const branchName =
     core.getInput('branch-name') ||
-    github.context.ref.replace('refs/heads/', '')
+    github.context.ref.replace(/^refs\/(heads|pull)\//, '')
   // Replace any character that isn't alphanumeric or hyphen with a hyphen, then trim any leading/trailing hyphens
   const slugSafeBranchName = branchName
     .replace(/[^a-zA-Z0-9-]/g, '-')
