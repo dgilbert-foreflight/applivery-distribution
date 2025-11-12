@@ -410,7 +410,7 @@ export async function uploadBuild(
   }
 
   // Construct the form data
-  let formData = new FormData()
+  const formData = new FormData()
   // Required Fields
   formData.append('build', fs.createReadStream(buildPath), {
     filename: filename
@@ -457,7 +457,7 @@ export async function uploadBuild(
     }
   }
 
-  let config: AxiosRequestConfig = {
+  const config: AxiosRequestConfig = {
     url: url,
     method: 'post',
     maxBodyLength: Infinity,
@@ -546,7 +546,7 @@ export async function getBuild(
   const apiBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
   const url = `${apiBaseUrl}integrations/builds/${buildId}`
 
-  let config: AxiosRequestConfig = {
+  const config: AxiosRequestConfig = {
     url: url,
     method: 'get',
     headers: {

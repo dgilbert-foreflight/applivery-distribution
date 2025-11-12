@@ -50,7 +50,7 @@ export async function run(): Promise<void> {
   }
 
   // Default publication creation request payload should one not already exist for the branch name or slug name
-  let publicationPayload: CreatePublicationRequest = {
+  const publicationPayload: CreatePublicationRequest = {
     slug: slugName,
     visibility: Applivery.PublicationVisibility.Unlisted,
     security: security,
@@ -76,7 +76,7 @@ export async function run(): Promise<void> {
 
   try {
     // Look for existing publications tied to the branch name
-    let branchPublications = await Applivery.fetchPublications(
+    const branchPublications = await Applivery.fetchPublications(
       apiKey,
       baseUrl,
       {
@@ -99,7 +99,7 @@ export async function run(): Promise<void> {
     })
 
     // Look for existing publications tied to the slug name
-    let slugPublication = await Applivery.fetchPublications(apiKey, baseUrl, {
+    const slugPublication = await Applivery.fetchPublications(apiKey, baseUrl, {
       slug: slugName
     }).then((publications) => {
       return publications.map((publication) => {

@@ -6,7 +6,7 @@ import { DeployerInfo } from './client/models.js'
  * @param dateFields - Array of field names that should be converted to Date
  * @returns New object with date fields transformed to Date objects
  */
-export function transformDates<T extends Record<string, any>>(
+export function transformDates<T extends Record<string, unknown>>(
   obj: T,
   dateFields: (keyof T)[]
 ): T {
@@ -34,7 +34,7 @@ export function createDateTransformer<TRaw, TTransformed>(
 ): (raw: TRaw) => TTransformed {
   return (raw: TRaw) => {
     return transformDates(
-      raw as Record<string, any>,
+      raw as Record<string, unknown>,
       dateFields as string[]
     ) as TTransformed
   }
@@ -46,7 +46,7 @@ export function createDateTransformer<TRaw, TTransformed>(
  * @param dateFields - Array of field names that should be converted to Date
  * @returns New array with all items' date fields transformed
  */
-export function transformDatesArray<T extends Record<string, any>>(
+export function transformDatesArray<T extends Record<string, unknown>>(
   items: T[],
   dateFields: (keyof T)[]
 ): T[] {

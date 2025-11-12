@@ -46,6 +46,7 @@ export interface Publication {
   filter: {
     type: PublicationFilterType
     value: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any
   }
   visibility: PublicationVisibility
@@ -53,6 +54,7 @@ export interface Publication {
   groups: string[]
   tags: string[]
   // Add other fields as needed based on the API response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -98,6 +100,7 @@ export interface CreatePublicationRequest {
   filter: {
     type: PublicationFilterType
     value: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any
   }
   /** Tags for categorization */
@@ -109,6 +112,7 @@ export interface CreatePublicationRequest {
   /** Show history in the distribution */
   showHistory?: boolean
   /** Additional vendor-specific fields */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
@@ -162,7 +166,10 @@ export interface Build {
   application: string
   applicationInfo: ApplicationInfo
   changelog?: string
-  info?: { [key: string]: any }
+  info?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any
+  }
   size?: number
   processTime?: number
   queuedTime?: number
@@ -174,6 +181,7 @@ export interface Build {
   updatedAt: Date
   createdAt: Date
   /** Additional vendor-specific fields */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
