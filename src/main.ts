@@ -177,23 +177,22 @@ export async function run(): Promise<void> {
 
     const qrCode = await QRCode.toString(publication.distributionUrl)
     core.setOutput('qr-code', qrCode)
-    core.summary.addHeading('Install Page', '2')
-    core.summary.addRaw(
-      ':iphone: Scan this code to install the app on your device.'
-    )
-    core.summary.addBreak()
-    core.summary.addRaw('\n```\n' + qrCode + '\n```\n')
+    // Create the Summary Markdown content
+    core.summary
+      .addRaw(`## [Install App](${publication.distributionUrl})`)
+      .addBreak()
+      .addRaw(':iphone: Scan this code to install the app on your device.')
+      .addBreak()
+      .addRaw('\n```\n' + qrCode + '\n```\n')
     if (publicationPassword) {
-      core.summary.addBreak()
-      core.summary.addRaw(
-        `:unlock: Installation Password: ${publicationPassword}`
-      )
+      core.summary
+        .addRaw(':unlock: Installation Password:')
+        .addCodeBlock(publicationPassword, 'text')
     }
-    core.summary.addBreak()
-    core.summary.addLink('Install Page', publication.distributionUrl)
-    core.summary.addBreak()
     core.summary.addSeparator()
+    // Write the Summary Markdown
     core.summary.write()
+
     if (core.isDebug()) {
       console.log(core.summary.stringify())
     }
