@@ -58161,7 +58161,8 @@ function getDeployerInfo(context) {
         context.repo.repo +
         '/actions/runs/' +
         context.runId;
-    const branchName = context.ref.replace('refs/heads/', '');
+    const branchName = context.payload.pull_request?.head.ref?.replace(/^refs\/heads\//, '') ||
+        context.ref.replace(/^refs\/(heads|pull)\//, '');
     let commitMessage;
     switch (context.eventName) {
         case 'push':
@@ -58659,6 +58660,7 @@ async function run() {
     coreExports.setSecret(apiKey);
     const publicationPassword = coreExports.getInput('publication-password') || null;
     const branchName = coreExports.getInput('branch-name') ||
+        githubExports.context.payload.pull_request?.head.ref?.replace(/^refs\/heads\//, '') ||
         githubExports.context.ref.replace(/^refs\/(heads|pull)\//, '');
     // Replace any character that isn't alphanumeric or hyphen with a hyphen, then trim any leading/trailing hyphens
     const slugSafeBranchName = branchName

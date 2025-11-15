@@ -64,7 +64,9 @@ export function getDeployerInfo(context: typeof github.context): DeployerInfo {
     context.repo.repo +
     '/actions/runs/' +
     context.runId
-  const branchName = context.ref.replace('refs/heads/', '')
+  const branchName =
+    context.payload.pull_request?.head.ref?.replace(/^refs\/heads\//, '') ||
+    context.ref.replace(/^refs\/(heads|pull)\//, '')
   let commitMessage: string | undefined
   switch (context.eventName) {
     case 'push':
