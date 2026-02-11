@@ -58279,9 +58279,6 @@ async function fetchPublications(apiKey, baseUrl, queryParams, sortBy, sortOrder
                 }
             });
         }
-        if (sortBy) {
-            params.append('sort', `${sortBy}:${sortOrder}`);
-        }
         // Always add page parameter for pagination
         params.append('page', String(page));
         const queryString = params.toString();
@@ -58672,7 +58669,7 @@ async function run() {
         : PublicationSecurity.Public;
     const buildPath = coreExports.getInput('build-path');
     const changelog = coreExports.getInput('changelog');
-    const tags = coreExports.getInput('tags')?.split(',') || [githubExports.context.workflow];
+    const tags = coreExports.getInput('tags')?.split(',') || null;
     // Validate the build path
     const buildFile = require$$1.statSync(buildPath);
     if (!buildFile.isFile()) {
@@ -58681,19 +58678,37 @@ async function run() {
             ansiStyles.red.close);
         return;
     }
-    // Default publication creation request payload should one not already exist for the branch name or slug name
-    const publicationPayload = {
-        slug: slugName,
-        visibility: PublicationVisibility.Unlisted,
-        security: security,
-        password: publicationPassword || '',
-        filter: {
-            type: PublicationFilterType.GitBranch,
-            value: branchName
-        },
-        showDevInfo: true,
-        showHistory: true
-    };
+    let publicationPayload;
+    if (tags && tags.length > 0) {
+        // If tags are provided, create a publication with the tags
+        publicationPayload = {
+            slug: slugName,
+            visibility: PublicationVisibility.Unlisted,
+            security: security,
+            password: publicationPassword || '',
+            filter: {
+                type: PublicationFilterType.Tag,
+                value: tags.join(',')
+            },
+            showDevInfo: true,
+            showHistory: true
+        };
+    }
+    else {
+        // Default publication creation request payload should one not already exist for the branch name or slug name
+        publicationPayload = {
+            slug: slugName,
+            visibility: PublicationVisibility.Unlisted,
+            security: security,
+            password: publicationPassword || '',
+            filter: {
+                type: PublicationFilterType.GitBranch,
+                value: branchName
+            },
+            showDevInfo: true,
+            showHistory: true
+        };
+    }
     // Validate the provided slug name can be used as a slug
     const slugNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]$/;
     if (!slugName.match(slugNameRegex) || slugName.length > 128) {
@@ -58703,27 +58718,12 @@ async function run() {
         return;
     }
     try {
-        // Look for existing publications tied to the branch name
-        const branchPublications = await fetchPublications(apiKey, baseUrl, {
-            filterType: PublicationFilterType.GitBranch,
-            filterValue: branchName
-        }, 'createdAt', 'asc').then((publications) => {
-            // Format the fetched publications to make them more log friendly
-            return publications.map((publication) => {
-                return {
-                    id: publication.id,
-                    slug: publication.slug,
-                    distributionUrl: publication.distributionUrl,
-                    createdAt: publication.createdAt,
-                    updatedAt: publication.updatedAt
-                };
-            });
-        });
         // Look for existing publications tied to the slug name
-        const slugPublication = await fetchPublications(apiKey, baseUrl, {
+        let publication = await fetchPublications(apiKey, baseUrl, {
             slug: slugName
         }).then((publications) => {
-            return publications.map((publication) => {
+            return publications
+                .map((publication) => {
                 return {
                     id: publication.id,
                     slug: publication.slug,
@@ -58731,42 +58731,11 @@ async function run() {
                     createdAt: publication.createdAt,
                     updatedAt: publication.updatedAt
                 };
-            });
+            })
+                .find((publication) => publication.slug === slugName);
         });
-        // If the slug publication is found but it doesn't match up with the branch publication found, warn the user that the existing slug name for the branch will be used.
-        if (slugPublication[0] &&
-            branchPublications[0] &&
-            slugPublication[0].id !== branchPublications[0].id) {
-            coreExports.warning(ansiStyles.yellow.open +
-                `Slug publication found doesn't match up with existing Branch publication found, will default to use the first branch publication created...` +
-                ansiStyles.yellow.close);
-            coreExports.debug(ansiStyles.cyan.open +
-                `SLUG PUBLICATION:\n` +
-                JSON.stringify(slugPublication[0], null, 2) +
-                ansiStyles.cyan.close);
-            coreExports.debug(ansiStyles.cyan.open +
-                `BRANCH PUBLICATION:\n` +
-                JSON.stringify(branchPublications[0], null, 2) +
-                ansiStyles.cyan.close);
-        }
-        // If multiple publications were found for the branch, warn the user that the first one created will be what is used
-        if (branchPublications.length > 1) {
-            coreExports.warning(ansiStyles.yellow.open +
-                `Multiple publications found for branch: ${branchName}, will default to use the first one created...` +
-                ansiStyles.yellow.close);
-            coreExports.debug(ansiStyles.yellow.open +
-                JSON.stringify(branchPublications, null, 2) +
-                ansiStyles.yellow.close);
-        }
-        // Always use the first publication created for the branch
-        let publication = branchPublications[0] || slugPublication[0];
-        if (publication) {
-            coreExports.info(ansiStyles.green.open +
-                `Found existing publication:\n${JSON.stringify(publication, null, 2)}` +
-                ansiStyles.green.close);
-        }
-        else {
-            coreExports.info(`No publication found for branch: '${branchName}' or slug: '${slugName}', will create a new publication...`);
+        if (!publication) {
+            coreExports.info(`No publication found for slug: '${slugName}', will create a new publication...`);
             publication = await createPublication(apiKey, baseUrl, publicationPayload);
         }
         coreExports.setOutput('publication-id', publication.id);

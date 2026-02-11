@@ -40,7 +40,7 @@ export async function run(): Promise<void> {
     : Applivery.PublicationSecurity.Public
   const buildPath = core.getInput('build-path')
   const changelog = core.getInput('changelog')
-  const tags = core.getInput('tags')?.split(',') || [github.context.workflow]
+  const tags = core.getInput('tags')?.split(',') || null
 
   // Validate the build path
   const buildFile = fs.statSync(buildPath)
@@ -53,18 +53,35 @@ export async function run(): Promise<void> {
     return
   }
 
-  // Default publication creation request payload should one not already exist for the branch name or slug name
-  const publicationPayload: CreatePublicationRequest = {
-    slug: slugName,
-    visibility: Applivery.PublicationVisibility.Unlisted,
-    security: security,
-    password: publicationPassword || '',
-    filter: {
-      type: Applivery.PublicationFilterType.GitBranch,
-      value: branchName
-    },
-    showDevInfo: true,
-    showHistory: true
+  let publicationPayload: CreatePublicationRequest
+  if (tags && tags.length > 0) {
+    // If tags are provided, create a publication with the tags
+    publicationPayload = {
+      slug: slugName,
+      visibility: Applivery.PublicationVisibility.Unlisted,
+      security: security,
+      password: publicationPassword || '',
+      filter: {
+        type: Applivery.PublicationFilterType.Tag,
+        value: tags.join(',')
+      },
+      showDevInfo: true,
+      showHistory: true
+    }
+  } else {
+    // Default publication creation request payload should one not already exist for the branch name or slug name
+    publicationPayload = {
+      slug: slugName,
+      visibility: Applivery.PublicationVisibility.Unlisted,
+      security: security,
+      password: publicationPassword || '',
+      filter: {
+        type: Applivery.PublicationFilterType.GitBranch,
+        value: branchName
+      },
+      showDevInfo: true,
+      showHistory: true
+    }
   }
 
   // Validate the provided slug name can be used as a slug
@@ -79,94 +96,26 @@ export async function run(): Promise<void> {
   }
 
   try {
-    // Look for existing publications tied to the branch name
-    const branchPublications = await Applivery.fetchPublications(
-      apiKey,
-      baseUrl,
-      {
-        filterType: Applivery.PublicationFilterType.GitBranch,
-        filterValue: branchName
-      },
-      'createdAt',
-      'asc'
-    ).then((publications) => {
-      // Format the fetched publications to make them more log friendly
-      return publications.map((publication) => {
-        return {
-          id: publication.id,
-          slug: publication.slug,
-          distributionUrl: publication.distributionUrl,
-          createdAt: publication.createdAt,
-          updatedAt: publication.updatedAt
-        }
-      })
-    })
-
     // Look for existing publications tied to the slug name
-    const slugPublication = await Applivery.fetchPublications(apiKey, baseUrl, {
+    let publication = await Applivery.fetchPublications(apiKey, baseUrl, {
       slug: slugName
     }).then((publications) => {
-      return publications.map((publication) => {
-        return {
-          id: publication.id,
-          slug: publication.slug,
-          distributionUrl: publication.distributionUrl,
-          createdAt: publication.createdAt,
-          updatedAt: publication.updatedAt
-        }
-      })
+      return publications
+        .map((publication) => {
+          return {
+            id: publication.id,
+            slug: publication.slug,
+            distributionUrl: publication.distributionUrl,
+            createdAt: publication.createdAt,
+            updatedAt: publication.updatedAt
+          }
+        })
+        .find((publication) => publication.slug === slugName)
     })
 
-    // If the slug publication is found but it doesn't match up with the branch publication found, warn the user that the existing slug name for the branch will be used.
-    if (
-      slugPublication[0] &&
-      branchPublications[0] &&
-      slugPublication[0].id !== branchPublications[0].id
-    ) {
-      core.warning(
-        styles.yellow.open +
-          `Slug publication found doesn't match up with existing Branch publication found, will default to use the first branch publication created...` +
-          styles.yellow.close
-      )
-      core.debug(
-        styles.cyan.open +
-          `SLUG PUBLICATION:\n` +
-          JSON.stringify(slugPublication[0], null, 2) +
-          styles.cyan.close
-      )
-      core.debug(
-        styles.cyan.open +
-          `BRANCH PUBLICATION:\n` +
-          JSON.stringify(branchPublications[0], null, 2) +
-          styles.cyan.close
-      )
-    }
-
-    // If multiple publications were found for the branch, warn the user that the first one created will be what is used
-    if (branchPublications.length > 1) {
-      core.warning(
-        styles.yellow.open +
-          `Multiple publications found for branch: ${branchName}, will default to use the first one created...` +
-          styles.yellow.close
-      )
-      core.debug(
-        styles.yellow.open +
-          JSON.stringify(branchPublications, null, 2) +
-          styles.yellow.close
-      )
-    }
-
-    // Always use the first publication created for the branch
-    let publication = branchPublications[0] || slugPublication[0]
-    if (publication) {
+    if (!publication) {
       core.info(
-        styles.green.open +
-          `Found existing publication:\n${JSON.stringify(publication, null, 2)}` +
-          styles.green.close
-      )
-    } else {
-      core.info(
-        `No publication found for branch: '${branchName}' or slug: '${slugName}', will create a new publication...`
+        `No publication found for slug: '${slugName}', will create a new publication...`
       )
       publication = await Applivery.createPublication(
         apiKey,
