@@ -42,7 +42,11 @@ export async function run(): Promise<void> {
     : Applivery.PublicationSecurity.Public
   const buildPath = core.getInput('build-path')
   const changelog = core.getInput('changelog')
-  const tags = core.getInput('tags')?.split(',') || []
+  const tags = core
+    .getInput('tags')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean) // Removes empty strings
 
   // Validate the build path
   const buildFile = fs.statSync(buildPath)

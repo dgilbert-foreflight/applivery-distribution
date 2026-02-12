@@ -58669,7 +58669,10 @@ async function run() {
         : PublicationSecurity.Public;
     const buildPath = coreExports.getInput('build-path');
     const changelog = coreExports.getInput('changelog');
-    const tags = coreExports.getInput('tags')?.split(',') || [];
+    const tags = coreExports.getInput('tags')
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean); // Removes empty strings
     // Validate the build path
     const buildFile = require$$1.statSync(buildPath);
     if (!buildFile.isFile()) {
