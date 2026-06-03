@@ -58669,6 +58669,7 @@ async function run() {
         : PublicationSecurity.Public;
     const buildPath = coreExports.getInput('build-path');
     const changelog = coreExports.getInput('changelog');
+    const uploadOnly = coreExports.getInput('upload-only') === 'true';
     const tags = coreExports.getInput('tags')
         .split(',')
         .map((tag) => tag.trim())
@@ -58678,14 +58679,6 @@ async function run() {
     if (!buildFile.isFile()) {
         coreExports.setFailed(ansiStyles.red.open +
             `Build file does not exist: ${buildPath}` +
-            ansiStyles.red.close);
-        return;
-    }
-    // Validate the provided slug name can be used as a slug
-    const slugNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]$/;
-    if (!slugName.match(slugNameRegex) || slugName.length > 128) {
-        coreExports.setFailed(ansiStyles.red.open +
-            `Invalid slug-name: ${ansiStyles.cyan.open + slugName + ansiStyles.cyan.close}. Must start and end with alphanumeric character and contain only alphanumeric characters or hyphens in between. Must be less than 128 characters.` +
             ansiStyles.red.close);
         return;
     }
@@ -58727,6 +58720,21 @@ async function run() {
         coreExports.debug(ansiStyles.cyan.open +
             `Uploaded build:\n${JSON.stringify(uploadedBuild, null, 2)}` +
             ansiStyles.cyan.close);
+        coreExports.setOutput('build-id', uploadedBuild.id);
+        if (uploadOnly) {
+            coreExports.notice(ansiStyles.green.open +
+                `Build uploaded to Applivery with id ${uploadedBuild.id}` +
+                ansiStyles.green.close);
+            return;
+        }
+        // Validate the provided slug name can be used as a slug
+        const slugNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]$/;
+        if (!slugName.match(slugNameRegex) || slugName.length > 128) {
+            coreExports.setFailed(ansiStyles.red.open +
+                `Invalid slug-name: ${ansiStyles.cyan.open + slugName + ansiStyles.cyan.close}. Must start and end with alphanumeric character and contain only alphanumeric characters or hyphens in between. Must be less than 128 characters.` +
+                ansiStyles.red.close);
+            return;
+        }
         // Look for existing publications tied to the slug name
         let publication = await fetchPublications(apiKey, baseUrl, {
             slug: slugName
