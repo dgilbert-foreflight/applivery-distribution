@@ -47,6 +47,12 @@ inputs:
       'Skip waiting for the build to be processed (Optional, defaults to false)'
     required: false
     default: 'false'
+  upload-only:
+    description:
+      'Only upload the build to Applivery without creating or fetching a
+      publication'
+    required: false
+    default: 'false'
   max-attempts:
     description:
       'Maximum number of attempts to check the build status (Optional, defaults
@@ -61,6 +67,8 @@ inputs:
     default: '30'
 
 outputs:
+  build-id:
+    description: 'ID of the uploaded build'
   publication-id:
     description: 'ID of the publication'
   publication-slug:

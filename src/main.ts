@@ -42,6 +42,7 @@ export async function run(): Promise<void> {
     : Applivery.PublicationSecurity.Public
   const buildPath = core.getInput('build-path')
   const changelog = core.getInput('changelog')
+  const uploadOnly = core.getInput('upload-only') === 'true'
   const tags = core
     .getInput('tags')
     .split(',')
@@ -54,17 +55,6 @@ export async function run(): Promise<void> {
     core.setFailed(
       styles.red.open +
         `Build file does not exist: ${buildPath}` +
-        styles.red.close
-    )
-    return
-  }
-
-  // Validate the provided slug name can be used as a slug
-  const slugNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]$/
-  if (!slugName.match(slugNameRegex) || slugName.length > 128) {
-    core.setFailed(
-      styles.red.open +
-        `Invalid slug-name: ${styles.cyan.open + slugName + styles.cyan.close}. Must start and end with alphanumeric character and contain only alphanumeric characters or hyphens in between. Must be less than 128 characters.` +
         styles.red.close
     )
     return
@@ -128,6 +118,28 @@ export async function run(): Promise<void> {
         `Uploaded build:\n${JSON.stringify(uploadedBuild, null, 2)}` +
         styles.cyan.close
     )
+
+    core.setOutput('build-id', uploadedBuild.id)
+
+    if (uploadOnly) {
+      core.notice(
+        styles.green.open +
+          `Build uploaded to Applivery with id ${uploadedBuild.id}` +
+          styles.green.close
+      )
+      return
+    }
+
+    // Validate the provided slug name can be used as a slug
+    const slugNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]$/
+    if (!slugName.match(slugNameRegex) || slugName.length > 128) {
+      core.setFailed(
+        styles.red.open +
+          `Invalid slug-name: ${styles.cyan.open + slugName + styles.cyan.close}. Must start and end with alphanumeric character and contain only alphanumeric characters or hyphens in between. Must be less than 128 characters.` +
+          styles.red.close
+      )
+      return
+    }
 
     // Look for existing publications tied to the slug name
     let publication = await Applivery.fetchPublications(apiKey, baseUrl, {
